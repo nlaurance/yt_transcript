@@ -42,6 +42,19 @@ from pipeline.tts import synthesize
 from pipeline.wrap_lines import wrap_lines
 
 
+def _unique_path(directory: Path, stem: str, suffix: str) -> Path:
+    """Return a path that does not yet exist, suffixing _2, _3, … on collision."""
+    candidate = directory / f"{stem}{suffix}"
+    if not candidate.exists():
+        return candidate
+    n = 2
+    while True:
+        candidate = directory / f"{stem}_{n}{suffix}"
+        if not candidate.exists():
+            return candidate
+        n += 1
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="yt-transcript",
@@ -79,6 +92,7 @@ def main() -> None:
         help="Directory for output files (default: ./output)",
     )
     args = parser.parse_args()
+    args.url = args.url.replace("\\", "")
 
     # --- Environment ---
     load_env()
@@ -138,14 +152,14 @@ def main() -> None:
         full_document = frontmatter_block + processed
 
         slug = slugify(meta.title, max_length=80, separator="_")
-        md_path = output_dir / f"{slug}.md"
+        md_path = _unique_path(output_dir, slug, ".md")
         md_path.write_text(full_document, encoding="utf-8")
         print(f"\nMarkdown saved → {md_path}")
 
         # 10. Optional TTS
         if args.tts:
             print("Generating audio via Mistral TTS...")
-            tts_path = output_dir / f"{slug}.mp3"
+            tts_path = md_path.with_suffix(".mp3")
             synthesize(processed, tts_path, client, voice=args.tts_voice)
             print(f"Audio saved    → {tts_path}")
 
