@@ -13,7 +13,7 @@ Options
     --lang fr|en|auto   Source language (default: fr).
     --narrative         Optional podcast script (.txt + .md) on top of the synthetic note.
     --audio             MP3 from narrative script (implies --narrative).
-    --narrative-output PATH  Plain .txt and Obsidian .md for the podcast script.
+    --narrative-output PATH  Obsidian .md for the podcast script (.txt uses --raw-output).
     --translate-summary Append an English translation of the technical docs block.
     --audio-voice       Mistral voice slug (default by --lang) or custom UUID.
     --output-dir PATH   Default directory (or YT_TRANSCRIPT_OUTPUT_DIR in .env).
@@ -57,21 +57,18 @@ def _write_narrative(
     slug: str,
     default_dir: Path,
     narrative_output: str | None,
+    txt_dir: Path,
 ) -> None:
-    """Write plain-text script (.txt) and Obsidian companion (.md)."""
+    """Write plain .txt beside the raw transcript; Obsidian .md from narrative-output."""
+    stem = f"{slug}_narrative"
     spec = Path(narrative_output).expanduser() if narrative_output else None
     if spec and spec.suffix == ".md" and not (spec.exists() and spec.is_dir()):
         md_path = spec
         md_path.parent.mkdir(parents=True, exist_ok=True)
-        txt_path = md_path.with_suffix(".txt")
-    elif spec and spec.suffix == ".txt" and not (spec.exists() and spec.is_dir()):
-        txt_path = spec
-        txt_path.parent.mkdir(parents=True, exist_ok=True)
-        md_path = txt_path.with_suffix(".md")
     else:
-        txt_path = resolve_output(narrative_output, default_dir, f"{slug}_narrative", ".txt")
-        md_path = resolve_output(narrative_output, default_dir, f"{slug}_narrative", ".md")
+        md_path = resolve_output(narrative_output, default_dir, stem, ".md")
 
+    txt_path = resolve_output(None, txt_dir, stem, ".txt")
     txt_path.write_text(narrative_body, encoding="utf-8")
     md_path.write_text(frontmatter_block + narrative_body, encoding="utf-8")
     print(f"Narrative text → {txt_path}")
@@ -97,7 +94,7 @@ def main() -> None:
     parser.add_argument(
         "--narrative",
         action="store_true",
-        help="Also write podcast script as *_narrative.txt (plain) and .md; note is always produced",
+        help="Also write *_narrative.txt (with raw) and *_narrative.md (note is always produced)",
     )
     parser.add_argument(
         "--audio",
@@ -145,7 +142,7 @@ def main() -> None:
         default=env_path("YT_TRANSCRIPT_NARRATIVE_OUTPUT"),
         dest="narrative_output",
         metavar="PATH",
-        help="Narrative .txt/.md path (env: YT_TRANSCRIPT_NARRATIVE_OUTPUT)",
+        help="Narrative Obsidian .md (env: YT_TRANSCRIPT_NARRATIVE_OUTPUT); .txt uses --raw-output",
     )
     parser.add_argument(
         "--audio-output",
@@ -232,13 +229,13 @@ def main() -> None:
         print(f"\nMarkdown saved → {md_path}")
 
         if narrative_body is not None:
-            narrative_dir = md_path.parent
             _write_narrative(
                 narrative_body,
                 frontmatter_block,
                 slug,
-                narrative_dir,
+                output_dir,
                 args.narrative_output,
+                raw_path.parent,
             )
 
         if args.audio_output:

@@ -162,7 +162,10 @@ NARRATIVE_PROMPT_FR = (
     "conclusion orale des enseignements (pas de glossaire tabulaire séparé — intégrez les termes "
     "clés dans le flux du récit).\n\n"
     "7. LANGUE : rédigez entièrement en français (même langue que la voix TTS française).\n\n"
-    "Retournez uniquement le corps du script, sans frontmatter YAML."
+    "8. SORTIE BRUTE : commencez directement par la phrase d'accroche du podcast. "
+    "Interdit : méta-commentaires, préambule, explication de la tâche ou des consignes "
+    "(ex. « Voici le script… », « Ci-dessous… », « Respectant les contraintes… »). "
+    "Aucun frontmatter YAML, aucun titre hors script."
 )
 
 NARRATIVE_PROMPT_EN = (
@@ -186,5 +189,8 @@ NARRATIVE_PROMPT_EN = (
     "6. OPENING AND CLOSING: one sentence to frame the topic; a short spoken recap of main "
     "takeaways (no separate glossary table — weave key terms into the narrative).\n\n"
     "7. LANGUAGE: write entirely in English (same language as the English TTS voice).\n\n"
-    "Return only the script body, no YAML frontmatter."
+    "8. RAW OUTPUT: start directly with the podcast hook sentence. "
+    "Forbidden: meta-commentary, preambles, or task explanations "
+    "(e.g. 'Here is the script…', 'Below is…', 'Following your instructions…'). "
+    "No YAML frontmatter, no out-of-script titles."
 )

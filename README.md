@@ -21,8 +21,8 @@ Supports French and English presentations (`--lang fr|en|auto`).
 
 | Artifact | Default path | Description |
 |----------|--------------|-------------|
-| Narrative text | `output/<slug>_narrative.txt` | Plain podcast script: prose, no code, linear story |
-| Narrative note | `output/<slug>_narrative.md` | Same script + Obsidian frontmatter |
+| Narrative text | same dir as raw (`<slug>_narrative.txt`) | Plain script for TTS retries / edits |
+| Narrative note | `YT_TRANSCRIPT_NARRATIVE_OUTPUT` or `output/` | Same script + Obsidian frontmatter |
 
 `--audio` implies narrative generation (you do not need both flags for a podcast workflow).
 
@@ -123,7 +123,7 @@ Each path flag accepts a **directory** (files named from the video slug) or an e
 |------|---------|----------------------|
 | `--note-output` | `.md` | Always (synthetic note) |
 | `--raw-output` | `.txt` | Always (raw transcript) |
-| `--narrative-output` | `.txt` + `.md` | With `--narrative` or `--audio` |
+| `--narrative-output` | `.md` | With `--narrative` or `--audio` (`.txt` uses `--raw-output`) |
 | `--audio-output` | `.mp3` | Source copy always; generated MP3 with `--audio` |
 
 Examples:
@@ -137,9 +137,10 @@ uv run --group pipeline yt-transcript "URL" \
 uv run --group pipeline yt-transcript "URL" \
   --raw-output ~/vault/my-talk_raw.txt
 
-# Narrative plain text only (companion .md written alongside)
+# Narrative .md in vault; plain .txt in the raw directory
 uv run --group pipeline yt-transcript "URL" --narrative \
-  --narrative-output ~/vault/my-talk_script.txt
+  --raw-output ~/vault/raw \
+  --narrative-output ~/vault/Narratives
 
 # Generated MP3 to a specific file; source audio in a directory
 uv run --group pipeline yt-transcript "URL" --audio \
@@ -161,7 +162,7 @@ audio; the source download is saved as `<stem>_source.mp3` in the same directory
 | `--output-dir` | `./output` | Default directory (`YT_TRANSCRIPT_OUTPUT_DIR`) |
 | `--note-output` | (dir) | Synthetic note (`YT_TRANSCRIPT_NOTE_OUTPUT`) |
 | `--raw-output` | (dir) | Raw transcript (`YT_TRANSCRIPT_RAW_OUTPUT`) |
-| `--narrative-output` | (dir) | Narrative script (`YT_TRANSCRIPT_NARRATIVE_OUTPUT`) |
+| `--narrative-output` | (dir) | Narrative Obsidian `.md` (`YT_TRANSCRIPT_NARRATIVE_OUTPUT`) |
 | `--audio-output` | — | Audio files (`YT_TRANSCRIPT_AUDIO_OUTPUT`) |
 
 ## Pipeline
@@ -189,7 +190,7 @@ Raw transcript ─────────────────────�
     ▼  YAML frontmatter + tags
     │
     ├──► <slug>.md                    synthetic note (always)
-    ├──► <slug>_narrative.txt + .md   optional
+    ├──► <slug>_narrative.txt (raw dir) + .md (narrative-output)   optional
     ├──► [--audio-output] <slug>_source.mp3
     └──► [--audio] <slug>_narrative.mp3   TTS from narrative .txt
 ```
