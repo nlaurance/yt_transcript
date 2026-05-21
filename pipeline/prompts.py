@@ -136,3 +136,55 @@ TRANSLATE_SUMMARY_PROMPT = (
     "Do not translate or modify any part of the document that comes before '## Documentation Technique'. "
     "Return only the translated section, starting with '## Technical Documentation'."
 )
+
+# ---------------------------------------------------------------------------
+# Narrative / podcast script (from cleaned technical document)
+# ---------------------------------------------------------------------------
+NARRATIVE_PROMPT_FR = (
+    "Vous êtes un auteur de scripts pour podcast technique. À partir du document technique structuré "
+    "ci-dessous (issu d'une transcription nettoyée), rédigez un script linéaire destiné à être lu "
+    "à voix haute par un moteur de synthèse vocale.\n\n"
+    "Règles strictes :\n\n"
+    "1. CONSERVER TOUTE LA SUBSTANCE : ce n'est pas un résumé. Chaque décision d'architecture, "
+    "métrique, compromis et limite doit apparaître en langage parlé. Ne supprimez pas de contenu "
+    "technique par rapport à la source.\n\n"
+    "2. AUCUN CODE : supprimez blocs de code, commandes, chemins de fichiers et identifiants "
+    "littéraux ; expliquez leur rôle en français courant.\n\n"
+    "3. PAS DE TABLEAUX NI DE LISTES À PUCE : transformez tableaux et listes en prose fluide "
+    "avec des transitions naturelles ('D'abord…', 'Ensuite…', 'Un autre point important…').\n\n"
+    "4. RÉCIT LINÉAIRE : ordonnez les idées pour l'écoute ; si la source sautait d'un sujet à "
+    "l'autre, regroupez par cohérence sans perdre de détails.\n\n"
+    "5. TEXTE PARLÉ POUR SYNTHÈSE VOCALE : prose continue uniquement — pas de Markdown "
+    "(pas de ##, *, `, tableaux, emojis, URL). Chiffres et symboles en forme parlée "
+    "(« mille deux cent trente-quatre », pas « 1234 » ; « F-B-I », pas « FBI »). "
+    "Abréviations et acronymes épelés ou développés.\n\n"
+    "6. INTRODUCTION ET CONCLUSION : une phrase d'accroche qui situe le sujet ; une courte "
+    "conclusion orale des enseignements (pas de glossaire tabulaire séparé — intégrez les termes "
+    "clés dans le flux du récit).\n\n"
+    "7. LANGUE : rédigez entièrement en français (même langue que la voix TTS française).\n\n"
+    "Retournez uniquement le corps du script, sans frontmatter YAML."
+)
+
+NARRATIVE_PROMPT_EN = (
+    "You are a technical podcast scriptwriter. From the structured technical document below "
+    "(a cleaned talk transcript), write a linear narrative script meant to be read aloud by "
+    "text-to-speech.\n\n"
+    "Strict rules:\n\n"
+    "1. PRESERVE ALL SUBSTANCE: this is not a summary. Every architecture decision, metric, "
+    "trade-off, and limitation must appear in spoken form. Do not drop technical content from "
+    "the source.\n\n"
+    "2. NO CODE: remove code blocks, CLI commands, file paths, and literal identifiers; explain "
+    "what they do in plain English instead.\n\n"
+    "3. NO TABLES OR BULLET LISTS: turn tables and bullets into flowing prose with natural "
+    "transitions ('First,…', 'Next,…', 'Another key point…').\n\n"
+    "4. LINEAR NARRATIVE: order ideas for listening; if the source jumped between topics, "
+    "regroup for coherence without losing detail.\n\n"
+    "5. TTS-READY SPOKEN TEXT: continuous prose only — no Markdown (no ##, *, `, tables, "
+    "emojis, URLs). Write numbers and symbols in spoken form ('one thousand two hundred "
+    "thirty-four', not '1234'; 'F-B-I' or 'F.B.I.', not 'FBI'). Spell out or expand "
+    "abbreviations and acronyms.\n\n"
+    "6. OPENING AND CLOSING: one sentence to frame the topic; a short spoken recap of main "
+    "takeaways (no separate glossary table — weave key terms into the narrative).\n\n"
+    "7. LANGUAGE: write entirely in English (same language as the English TTS voice).\n\n"
+    "Return only the script body, no YAML frontmatter."
+)

@@ -16,10 +16,10 @@ Usage in scripts
 
 Usage from the shell
 --------------------
-    # dev (default)
+    # dev (default) — loads .env (MISTRAL_API_KEY, YT_TRANSCRIPT_* paths, …)
     uv run --group pipeline yt-transcript <URL>
 
-    # production
+    # production — loads .env.prod
     APP_ENV=prod uv run --group pipeline yt-transcript <URL>
 """
 
@@ -42,3 +42,15 @@ def load_env() -> Path | None:
 
     load_dotenv(env_file, override=True)
     return env_file
+
+
+def env_path(key: str) -> str | None:
+    """Return a non-empty path from the environment, or None."""
+    value = os.environ.get(key, "").strip()
+    return value or None
+
+
+def mistral_timeout_ms() -> int:
+    """Mistral HTTP read timeout for LLM/TTS calls (default 10 min)."""
+    raw = os.environ.get("MISTRAL_TIMEOUT_MS", "600000").strip()
+    return int(raw)

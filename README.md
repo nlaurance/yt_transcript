@@ -1,78 +1,168 @@
 # yt-transcript
 
-YouTube audio → clean, structured Obsidian Markdown via Mistral.
+YouTube audio → synthetic technical note, optional podcast script, optional re-narrated MP3.
 
-Takes a YouTube URL, downloads the audio, transcribes it with Mistral Voxtral,
-removes filler words and repetitions, generates a technical documentation block,
-tags the content, and writes an Obsidian-ready `.md` file.
+Downloads a video’s audio, transcribes it with Mistral Voxtral, then uses Mistral Small to
+produce a dense **synthetic note** (Obsidian-ready Markdown). Optionally adds a **narrative**
+script suited for text-to-speech, and optionally synthesizes an MP3 from that script.
 
-Supports French and English presentations.
+Supports French and English presentations (`--lang fr|en|auto`).
 
-## Output
+## What you get
 
-Each run produces `output/<video-slug>.md` with:
+### Always
 
-- **YAML frontmatter** — title, date, source URL, presenter name, language, duration, tags
-- **Cleaned transcript** — structured under `##` headings, filler words and repetitions removed
-- **`## Documentation Technique`** — glossary table, architecture summary, risks & trade-offs
-- Optionally: English translation of the documentation block (`--translate-summary`)
-- Optionally: re-narrated MP3 (`--tts`)
+| Artifact | Default path | Description |
+|----------|--------------|-------------|
+| Synthetic note | `output/<slug>.md` | Cleaned talk: headings, tables, code, `## Documentation Technique` block, YAML frontmatter |
+| Raw transcript | `output/<slug>_raw.txt` | Unedited Voxtral output (kept for reference) |
+
+### With `--narrative` or `--audio`
+
+| Artifact | Default path | Description |
+|----------|--------------|-------------|
+| Narrative text | `output/<slug>_narrative.txt` | Plain podcast script: prose, no code, linear story |
+| Narrative note | `output/<slug>_narrative.md` | Same script + Obsidian frontmatter |
+
+`--audio` implies narrative generation (you do not need both flags for a podcast workflow).
+
+### With `--audio`
+
+| Artifact | Default path | Description |
+|----------|--------------|-------------|
+| Generated MP3 | `output/<slug>_narrative.mp3` | Mistral TTS reading the narrative `.txt` |
+
+### With `--audio-output`
+
+| Artifact | Default path | Description |
+|----------|--------------|-------------|
+| Source MP3 | `…/<slug>_source.mp3` | Copy of the downloaded YouTube audio |
+
+Without `--audio-output`, the download cache under `output/_cache/` is deleted after a
+successful run.
+
+### With `--translate-summary`
+
+Appends an English translation of the technical documentation block to the synthetic note
+(French talks only).
 
 ## Requirements
 
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/)
 - [ffmpeg](https://ffmpeg.org/) — `brew install ffmpeg`
-- A [Mistral API key](https://console.mistral.ai/api-keys)
+- A [Mistral API key](https://console.mistral.ai/api-keys) with Voxtral enabled
 
 ## Setup
 
 ```bash
 cp .env.example .env
-# Edit .env and set MISTRAL_API_KEY=...
+# Set MISTRAL_API_KEY=...
+# Optional: set YT_TRANSCRIPT_OUTPUT_DIR, YT_TRANSCRIPT_NOTE_OUTPUT, etc.
 
 uv sync --group pipeline
 ```
 
 ## Usage
 
-The default language is **French**. Pass `--lang en` for English talks, or `--lang auto`
-to let Voxtral detect the language itself.
+Default language is **French**. Use `--lang en` for English talks, or `--lang auto` to let
+Voxtral detect the language.
 
 ```bash
-# French presentation — default, no flag needed
+# Synthetic note + raw transcript only
 uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX"
 
-# English presentation
+# English talk
 uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" --lang en
 
-# French talk, also write a re-narrated MP3
-uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" --tts
+# Narrative script (.txt + .md), no audio
+uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" --narrative
 
-# French talk, append an English translation of the technical docs block
-uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" --translate-summary
+# Podcast: narrative + MP3 (--audio implies --narrative)
+uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" --audio
 
-# Save output to your Obsidian vault directly
-uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" \
-  --output-dir ~/notes/talks
-
-# English talk with all options
+# Full example: split outputs, English summary, custom voice
 uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" \
   --lang en \
-  --tts \
-  --tts-voice benjamin \
-  --output-dir ~/notes/talks
+  --note-output ~/vault/notes \
+  --raw-output ~/vault/raw \
+  --narrative-output ~/vault/narrative \
+  --audio-output ~/vault/audio \
+  --audio \
+  --audio-voice en_paul_neutral \
+  --translate-summary
 ```
 
-### Options
+### Retry TTS from an existing narrative
 
-| Flag                  | Default    | Description                                              |
-|-----------------------|------------|----------------------------------------------------------|
-| `--lang`              | `fr`       | Source language: `fr`, `en`, or `auto`                   |
-| `--tts`               | off        | Generate a re-narrated MP3 from the processed transcript |
-| `--translate-summary` | off        | Append English translation of the technical docs block   |
-| `--tts-voice`         | `sasha`    | TTS voice: `sasha` (female) or `benjamin` (male)         |
-| `--output-dir`        | `./output` | Directory for output files                               |
+If the pipeline succeeded but TTS failed (or you want a different voice), regenerate
+the MP3 from a saved `*_narrative.txt` without re-downloading or re-transcribing:
+
+```bash
+# --lang is required (fr → fr_marie_*, en → en_paul_* / gb_*)
+uv run --group pipeline yt-transcript-tts ~/vault/my-talk_narrative.txt --lang en
+
+uv run --group pipeline yt-transcript-tts script.txt --lang fr \
+  --audio-voice fr_marie_happy \
+  --audio-output ~/vault/my-talk.mp3
+```
+
+Voices use slugs from [audio.voices.list()](https://docs.mistral.ai/studio-api/audio/text_to_speech/voices)
+(e.g. `fr_marie_neutral`, `en_paul_neutral`) as `voice_id` in
+[speech generation](https://docs.mistral.ai/studio-api/audio/text_to_speech/speech).
+
+### Output paths
+
+`--output-dir` (or `YT_TRANSCRIPT_OUTPUT_DIR` in `.env`) is the fallback when a
+per-artifact flag is omitted. Env vars are loaded from `.env` / `.env.prod`; CLI flags
+override env when both are set.
+
+Each path flag accepts a **directory** (files named from the video slug) or an explicit **file**:
+
+| Flag | Formats | Always / conditional |
+|------|---------|----------------------|
+| `--note-output` | `.md` | Always (synthetic note) |
+| `--raw-output` | `.txt` | Always (raw transcript) |
+| `--narrative-output` | `.txt` + `.md` | With `--narrative` or `--audio` |
+| `--audio-output` | `.mp3` | Source copy always; generated MP3 with `--audio` |
+
+Examples:
+
+```bash
+# Exact note file; other artifacts use default output/
+uv run --group pipeline yt-transcript "URL" \
+  --note-output ~/vault/my-talk.md
+
+# Exact raw transcript file
+uv run --group pipeline yt-transcript "URL" \
+  --raw-output ~/vault/my-talk_raw.txt
+
+# Narrative plain text only (companion .md written alongside)
+uv run --group pipeline yt-transcript "URL" --narrative \
+  --narrative-output ~/vault/my-talk_script.txt
+
+# Generated MP3 to a specific file; source audio in a directory
+uv run --group pipeline yt-transcript "URL" --audio \
+  --audio-output ~/vault/my-talk.mp3
+```
+
+When `--audio-output` points to a single `.mp3` file, that path is used for the generated
+audio; the source download is saved as `<stem>_source.mp3` in the same directory.
+
+## Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--lang` | `fr` | Source language: `fr`, `en`, or `auto` |
+| `--narrative` | off | Add `*_narrative.txt` and `*_narrative.md` (synthetic note still always written) |
+| `--audio` | off | Generate MP3 from narrative; also generates and saves narrative text |
+| `--translate-summary` | off | Append English translation of the technical docs block |
+| `--audio-voice` | by `--lang` | Mistral voice slug (`fr_marie_neutral`, `en_paul_neutral`, …) or custom UUID; env: `YT_TRANSCRIPT_AUDIO_VOICE` |
+| `--output-dir` | `./output` | Default directory (`YT_TRANSCRIPT_OUTPUT_DIR`) |
+| `--note-output` | (dir) | Synthetic note (`YT_TRANSCRIPT_NOTE_OUTPUT`) |
+| `--raw-output` | (dir) | Raw transcript (`YT_TRANSCRIPT_RAW_OUTPUT`) |
+| `--narrative-output` | (dir) | Narrative script (`YT_TRANSCRIPT_NARRATIVE_OUTPUT`) |
+| `--audio-output` | — | Audio files (`YT_TRANSCRIPT_AUDIO_OUTPUT`) |
 
 ## Pipeline
 
@@ -80,36 +170,45 @@ uv run --group pipeline yt-transcript "https://www.youtube.com/watch?v=XXX" \
 YouTube URL
     │
     ▼  yt-dlp + ffmpeg
-MP3 audio
+MP3 (cached under output/_cache/)
     │
-    ▼  Mistral Voxtral (STT)
-Raw transcript
+    ▼  Mistral Voxtral
+Raw transcript ──────────────────────────► <slug>_raw.txt  (always)
     │
-    ├──► presenter.py   → speaker name (metadata → LLM fallback)
+    ├──► presenter extraction (metadata → LLM fallback)
     │
-    ▼  Mistral Small (LLM)
-Cleaned Markdown + Documentation block
+    ▼  Mistral Small: clean()
+    │      filler removal, restructuring, documentation block
     │
-    ├──► tagger.py      → content tags
-    ├──► [--translate-summary] → EN docs block appended
+    ├──► [--translate-summary] EN docs block appended to note
+    ├──► [--narrative | --audio] narrative() on cleaned text
+    │         (prose, no code; second LLM pass)
     │
-    ▼  frontmatter.py
-Obsidian .md (YAML frontmatter + body)
+    ▼  wrap_lines / format_tables  (synthetic note only)
     │
-    └──► [--tts] Mistral TTS → .mp3
+    ▼  YAML frontmatter + tags
+    │
+    ├──► <slug>.md                    synthetic note (always)
+    ├──► <slug>_narrative.txt + .md   optional
+    ├──► [--audio-output] <slug>_source.mp3
+    └──► [--audio] <slug>_narrative.mp3   TTS from narrative .txt
 ```
+
+**Order:** Voxtral → **`clean()`** (synthetic note content) → optional **`narrative()`**
+(rewrite for listening, same substance, no code) → formatting on the note only.
 
 ## Modules
 
-| File                      | Role                                         |
-|---------------------------|----------------------------------------------|
-| `pipeline/cli.py`         | Entry point, argument parsing, orchestration |
-| `pipeline/downloader.py`  | yt-dlp wrapper, returns `VideoMeta`          |
-| `pipeline/transcribe.py`  | Voxtral STT call                             |
-| `pipeline/postprocess.py` | LLM cleanup and optional EN translation      |
-| `pipeline/tagger.py`      | LLM tag generation                           |
-| `pipeline/presenter.py`   | Speaker name extraction                      |
-| `pipeline/frontmatter.py` | Obsidian YAML frontmatter builder            |
-| `pipeline/tts.py`         | Mistral TTS synthesis                        |
-| `pipeline/prompts.py`     | All LLM system instructions                  |
-| `pipeline/env_loader.py`  | `.env` / `.env.prod` loader                  |
+| File | Role |
+|------|------|
+| `pipeline/cli.py` | Entry point, orchestration |
+| `pipeline/output_paths.py` | Output path resolution (file vs directory) |
+| `pipeline/downloader.py` | yt-dlp wrapper, `VideoMeta` |
+| `pipeline/transcribe.py` | Voxtral STT |
+| `pipeline/postprocess.py` | `clean()`, `narrative()`, translation |
+| `pipeline/tagger.py` | Content tags |
+| `pipeline/presenter.py` | Speaker name |
+| `pipeline/frontmatter.py` | Obsidian YAML frontmatter |
+| `pipeline/tts.py` | Mistral TTS |
+| `pipeline/prompts.py` | LLM system prompts |
+| `pipeline/env_loader.py` | `.env` loader |

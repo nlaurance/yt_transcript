@@ -22,6 +22,7 @@ pipeline = [
 
 [project.scripts]
 yt-transcript = "pipeline.cli:main"
+yt-transcript-tts = "pipeline.tts_cli:main"
 
 [tool.ruff]
 target-version = "py314"

@@ -2,12 +2,19 @@
 
 clean()            — removes filler words, collapses repetitions, structures
                      the text, and appends a technical documentation block.
+narrative()        — rewrites a cleaned document as a linear podcast/TTS script.
 translate_summary() — translates the Documentation Technique section to English.
 """
 
 from mistralai.client import Mistral
 
-from pipeline.prompts import CLEANUP_PROMPT_EN, CLEANUP_PROMPT_FR, TRANSLATE_SUMMARY_PROMPT
+from pipeline.prompts import (
+    CLEANUP_PROMPT_EN,
+    CLEANUP_PROMPT_FR,
+    NARRATIVE_PROMPT_EN,
+    NARRATIVE_PROMPT_FR,
+    TRANSLATE_SUMMARY_PROMPT,
+)
 
 
 def clean(raw_transcript: str, client: Mistral, language: str = "fr") -> str:
@@ -25,6 +32,26 @@ def clean(raw_transcript: str, client: Mistral, language: str = "fr") -> str:
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": raw_transcript},
+        ],
+    )
+    return response.choices[0].message.content.strip()
+
+
+def narrative(processed: str, client: Mistral, language: str = "fr") -> str:
+    """Return a linear, TTS-friendly script from a cleaned technical document.
+
+    Args:
+        processed: Output of clean() (structured Markdown + documentation block).
+        client: Authenticated Mistral client.
+        language: "fr" or "en" — selects the narrative prompt language.
+    """
+    system_prompt = NARRATIVE_PROMPT_FR if language == "fr" else NARRATIVE_PROMPT_EN
+
+    response = client.chat.complete(
+        model="mistral-small-latest",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": processed},
         ],
     )
     return response.choices[0].message.content.strip()

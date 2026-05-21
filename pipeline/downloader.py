@@ -2,8 +2,8 @@
 
 Audio files are cached under output_dir/_cache/ so that a failed pipeline
 run (e.g. API error) does not require re-downloading the video on the next
-attempt.  The caller is responsible for deleting the cache file once the
-full pipeline has succeeded successfully.
+attempt.  On success the caller deletes the cache unless --audio-output
+copies the file elsewhere.
 """
 
 import re
