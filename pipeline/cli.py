@@ -28,14 +28,18 @@ import os
 import sys
 from pathlib import Path
 
+from mistralai.client.errors import SDKError
+
 from slugify import slugify
 
 from pipeline import postprocess, tagger, transcribe
 from pipeline.downloader import download_audio
 from pipeline.env_loader import load_env
 from pipeline import frontmatter as fm
+from pipeline.format_tables import format_tables
 from pipeline.presenter import extract_presenter
 from pipeline.tts import synthesize
+from pipeline.wrap_lines import wrap_lines
 
 
 def main() -> None:
@@ -91,11 +95,12 @@ def main() -> None:
 
     lang = None if args.lang == "auto" else args.lang
     mp3_path = None
+    success = False
 
     try:
-        # 1. Download
+        # 1. Download (reuses cache if available)
         print(f"Downloading audio from: {args.url}")
-        meta = download_audio(args.url, output_dir / "_tmp")
+        meta = download_audio(args.url, output_dir)
         mp3_path = meta.mp3_path
         print(f"  → {mp3_path.name}  ({meta.duration_seconds // 60} min)")
 
@@ -124,29 +129,49 @@ def main() -> None:
         tags = tagger.generate_tags(processed, client)
         print(f"  → {', '.join(tags)}")
 
-        # 7. Assemble Obsidian Markdown
+        # 7. Post-production formatting (deterministic, no LLM)
+        processed = wrap_lines(processed)
+        processed = format_tables(processed)
+
+        # 8. Assemble Obsidian Markdown
         frontmatter_block = fm.build(meta, presenter, tags, args.lang)
         full_document = frontmatter_block + processed
 
-        # 8. Write Markdown output
         slug = slugify(meta.title, max_length=80, separator="_")
         md_path = output_dir / f"{slug}.md"
         md_path.write_text(full_document, encoding="utf-8")
         print(f"\nMarkdown saved → {md_path}")
 
-        # 9. Optional TTS
+        # 10. Optional TTS
         if args.tts:
             print("Generating audio via Mistral TTS...")
             tts_path = output_dir / f"{slug}.mp3"
             synthesize(processed, tts_path, client, voice=args.tts_voice)
             print(f"Audio saved    → {tts_path}")
 
+        success = True
+
+    except SDKError as e:
+        if "401" in str(e) or "Unauthorized" in str(e):
+            print(
+                "\nERROR: Mistral API returned 401 Unauthorized.\n"
+                "  - Check that MISTRAL_API_KEY is correct in your .env file.\n"
+                "  - Voxtral (audio transcription) requires explicit activation on your\n"
+                "    Mistral account: https://console.mistral.ai/api-keys\n"
+                "  - The cached audio file has been kept — rerun once the key is fixed.",
+                file=sys.stderr,
+            )
+        else:
+            print(f"\nERROR: Mistral API error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     finally:
-        if mp3_path and mp3_path.exists():
+        # Only delete the cached audio on full success
+        if success and mp3_path and mp3_path.exists():
             mp3_path.unlink()
-        tmp_dir = output_dir / "_tmp"
-        if tmp_dir.exists() and not any(tmp_dir.iterdir()):
-            tmp_dir.rmdir()
+            cache_dir = output_dir / "_cache"
+            if cache_dir.exists() and not any(cache_dir.iterdir()):
+                cache_dir.rmdir()
 
 
 if __name__ == "__main__":

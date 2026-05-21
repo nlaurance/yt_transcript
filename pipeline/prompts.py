@@ -37,13 +37,15 @@ CLEANUP_PROMPT_FR = (
     "des lignes de code, des contraintes et des raisonnements logiques. Le texte doit être dense mais exhaustif.\n\n"
 
     "5. FORMATAGE LINÉAIRE : Organisez le texte de manière logique avec des titres descriptifs (##, ###). "
-    "Si l'orateur a fait des allers-retours désordonnés, regroupez ses propos par cohérence thématique.\n\n"
+    "Si l'orateur a fait des allers-retours désordonnés, regroupez ses propos par cohérence thématique. "
+    "N'utilisez JAMAIS de gras (**) à l'intérieur des titres (##, ###) ni dans les en-têtes de tableaux : "
+    "le rendu Markdown s'en charge automatiquement.\n\n"
 
     "6. BLOC DOCUMENTATION TECHNIQUE : À la fin du document, après une ligne '---', ajoutez une section "
-    "'## Documentation Technique' contenant :\n"
-    "   - ### Glossaire des Acronymes & Termes Clefs : tableau Markdown avec colonne Terme et Définition contextuelle.\n"
-    "   - ### Synthèse de l'Architecture / Solution : résumé concis des choix d'ingénierie présentés.\n"
-    "   - ### Points de Vigilance & Limites : contraintes, bottlenecks, trade-offs et bugs évoqués par l'intervenant."
+    "'## Documentation Technique' contenant trois sous-sections (niveau ###) :\n"
+    "   - Intitulée 'Glossaire des Acronymes & Termes Clefs' : tableau Markdown avec colonne Terme et Définition contextuelle.\n"
+    "   - Intitulée 'Synthèse de l'Architecture / Solution' : résumé concis des choix d'ingénierie présentés.\n"
+    "   - Intitulée 'Points de Vigilance & Limites' : contraintes, bottlenecks, trade-offs et bugs évoqués par l'intervenant."
 )
 
 # ---------------------------------------------------------------------------
@@ -75,13 +77,15 @@ CLEANUP_PROMPT_EN = (
     "the speaker made. The output must be dense but exhaustive.\n\n"
 
     "5. LINEAR FORMATTING: Structure the text with descriptive headings (##, ###). If the speaker "
-    "jumped between topics, regroup content by thematic coherence.\n\n"
+    "jumped between topics, regroup content by thematic coherence. "
+    "NEVER use bold (**) inside headings or table headers — Markdown rendering handles emphasis "
+    "automatically.\n\n"
 
     "6. TECHNICAL DOCUMENTATION BLOCK: At the end of the document, after a '---' line, add a "
-    "'## Technical Documentation' section containing:\n"
-    "   - ### Acronyms & Key Terms Glossary: Markdown table with Term and Contextual Definition columns.\n"
-    "   - ### Architecture / Solution Summary: concise summary of the engineering decisions presented.\n"
-    "   - ### Risks & Limitations: constraints, bottlenecks, trade-offs, and bugs raised by the speaker."
+    "'## Technical Documentation' section containing three subsections (level ###):\n"
+    "   - Titled 'Acronyms & Key Terms Glossary': Markdown table with Term and Contextual Definition columns.\n"
+    "   - Titled 'Architecture / Solution Summary': concise summary of the engineering decisions presented.\n"
+    "   - Titled 'Risks & Limitations': constraints, bottlenecks, trade-offs, and bugs raised by the speaker."
 )
 
 # ---------------------------------------------------------------------------

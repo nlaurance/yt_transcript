@@ -220,4 +220,5 @@ __marimo__/
 # Project-specific
 output/
 .env.prod
+output/_cache/
 .idea

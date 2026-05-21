@@ -24,7 +24,7 @@ def transcribe(mp3_path: Path, client: Mistral, language: str | None = "fr") -> 
         audio_bytes = f.read()
 
     kwargs: dict = {
-        "model": "voxtral-small-latest",
+        "model": "voxtral-mini-latest",
         "file": {"file_name": mp3_path.name, "content": audio_bytes},
     }
     if language:

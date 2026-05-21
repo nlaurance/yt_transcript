@@ -1,8 +1,9 @@
 """Download audio from a YouTube URL via yt-dlp.
 
-Returns a VideoMeta dataclass with the MP3 path and video metadata
-(title, uploader, description, duration, upload date) for use by the
-presenter-extraction and frontmatter modules.
+Audio files are cached under output_dir/_cache/ so that a failed pipeline
+run (e.g. API error) does not require re-downloading the video on the next
+attempt.  The caller is responsible for deleting the cache file once the
+full pipeline has succeeded successfully.
 """
 
 import re
@@ -24,17 +25,19 @@ class VideoMeta:
 
 
 def download_audio(url: str, output_dir: Path) -> VideoMeta:
-    """Download the audio track of a YouTube video as MP3.
+    """Return a VideoMeta for *url*, downloading the audio only if not cached.
 
-    The MP3 is written to *output_dir* under a sanitised filename derived from
-    the video title.  Caller is responsible for deleting the file afterwards.
+    The MP3 is stored at output_dir/_cache/<safe-title>.mp3.  If that file
+    already exists it is reused and no network request is made for the audio.
+    Metadata is always probed (cheap, no download).
 
     Raises RuntimeError on download failure.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = output_dir / "_cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Probe metadata first without downloading
-    probe_opts: dict = {"quiet": True, "no_warnings": True}
+    # Always probe metadata — fast, no download
+    probe_opts: dict = {"quiet": True, "no_warnings": True, "nocheckcertificate": True}
     with yt_dlp.YoutubeDL(probe_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
@@ -45,30 +48,34 @@ def download_audio(url: str, output_dir: Path) -> VideoMeta:
     upload_date: str = info.get("upload_date") or ""
 
     safe_title = _safe_filename(title)
-    mp3_path = output_dir / f"{safe_title}.mp3"
+    mp3_path = cache_dir / f"{safe_title}.mp3"
 
-    ydl_opts: dict = {
-        "format": "bestaudio/best",
-        "outtmpl": str(output_dir / safe_title),
-        "postprocessors": [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "128",
-            }
-        ],
-        "quiet": True,
-        "no_warnings": True,
-    }
+    if mp3_path.exists():
+        print(f"  → using cached audio: {mp3_path.name}")
+    else:
+        ydl_opts: dict = {
+            "format": "bestaudio/best",
+            "outtmpl": str(cache_dir / safe_title),
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "128",
+                }
+            ],
+            "quiet": True,
+            "no_warnings": True,
+            "nocheckcertificate": True,
+        }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ret = ydl.download([url])
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ret = ydl.download([url])
 
-    if ret != 0:
-        raise RuntimeError(f"yt-dlp exited with code {ret} for URL: {url}")
+        if ret != 0:
+            raise RuntimeError(f"yt-dlp exited with code {ret} for URL: {url}")
 
-    if not mp3_path.exists():
-        raise RuntimeError(f"Expected MP3 not found at {mp3_path}")
+        if not mp3_path.exists():
+            raise RuntimeError(f"Expected MP3 not found at {mp3_path}")
 
     return VideoMeta(
         mp3_path=mp3_path,
