@@ -89,6 +89,9 @@ def format_tables(text: str) -> str:
     i = 0
     while i < len(lines):
         if lines[i].strip().startswith("|"):
+            # GFM/Obsidian require a blank line before a table block.
+            if result and result[-1].strip():
+                result.append("\n")
             block: list[str] = []
             while i < len(lines) and lines[i].strip().startswith("|"):
                 block.append(lines[i])
