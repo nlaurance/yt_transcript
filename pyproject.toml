@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pipeline"]
+
+[project]
+name = "yt-transcript"
+version = "0.1.0"
+description = "YouTube audio → clean Obsidian-formatted transcript via Mistral"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+pipeline = [
+    "yt-dlp",
+    "mistralai",
+    "python-dotenv",
+    "python-slugify",
+]
+
+[project.scripts]
+yt-transcript = "pipeline.cli:main"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
