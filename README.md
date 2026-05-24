@@ -12,30 +12,30 @@ Supports French and English presentations (`--lang fr|en|auto`).
 
 ### Always
 
-| Artifact | Default path | Description |
-|----------|--------------|-------------|
-| Synthetic note | `output/<slug>.md` | Cleaned talk: headings, tables, code, `## Documentation Technique` block, YAML frontmatter |
-| Raw transcript | `output/<slug>_raw.txt` | Unedited Voxtral output (kept for reference) |
+| Artifact       | Default path            | Description                                                                                |
+|----------------|-------------------------|--------------------------------------------------------------------------------------------|
+| Synthetic note | `output/<slug>.md`      | Cleaned talk: headings, tables, code, `## Documentation Technique` block, YAML frontmatter |
+| Raw transcript | `output/<slug>_raw.txt` | Unedited Voxtral output (kept for reference)                                               |
 
 ### With `--narrative` or `--audio`
 
-| Artifact | Default path | Description |
-|----------|--------------|-------------|
-| Narrative text | same dir as raw (`<slug>_narrative.txt`) | Plain script for TTS retries / edits |
-| Narrative note | `YT_TRANSCRIPT_NARRATIVE_OUTPUT` or `output/` | Same script + Obsidian frontmatter |
+| Artifact       | Default path                                  | Description                          |
+|----------------|-----------------------------------------------|--------------------------------------|
+| Narrative text | same dir as raw (`<slug>_narrative.txt`)      | Plain script for TTS retries / edits |
+| Narrative note | `YT_TRANSCRIPT_NARRATIVE_OUTPUT` or `output/` | Same script + Obsidian frontmatter   |
 
 `--audio` implies narrative generation (you do not need both flags for a podcast workflow).
 
 ### With `--audio`
 
-| Artifact | Default path | Description |
-|----------|--------------|-------------|
+| Artifact      | Default path                  | Description                              |
+|---------------|-------------------------------|------------------------------------------|
 | Generated MP3 | `output/<slug>_narrative.mp3` | Mistral TTS reading the narrative `.txt` |
 
 ### With `--audio-output`
 
-| Artifact | Default path | Description |
-|----------|--------------|-------------|
+| Artifact   | Default path          | Description                          |
+|------------|-----------------------|--------------------------------------|
 | Source MP3 | `…/<slug>_source.mp3` | Copy of the downloaded YouTube audio |
 
 Without `--audio-output`, the download cache under `output/_cache/` is deleted after a
@@ -108,8 +108,20 @@ uv run --group pipeline yt-transcript-tts script.txt --lang fr \
 ```
 
 Voices use slugs from [audio.voices.list()](https://docs.mistral.ai/studio-api/audio/text_to_speech/voices)
-(e.g. `fr_marie_neutral`, `en_paul_neutral`) as `voice_id` in
+as `voice_id` in
 [speech generation](https://docs.mistral.ai/studio-api/audio/text_to_speech/speech).
+
+Available preset voice slugs (snapshot from the API on 2026-05-23):
+
+| Family      | Slugs                                                                                                                                                                         |
+|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `fr_marie`  | `fr_marie_angry`, `fr_marie_curious`, `fr_marie_excited`, `fr_marie_happy`, `fr_marie_neutral`, `fr_marie_sad`                                                                |
+| `en_paul`   | `en_paul_angry`, `en_paul_cheerful`, `en_paul_confident`, `en_paul_excited`, `en_paul_frustrated`, `en_paul_happy`, `en_paul_neutral`, `en_paul_sad`                          |
+| `gb_jane`   | `gb_jane_confident`, `gb_jane_confused`, `gb_jane_curious`, `gb_jane_frustrated`, `gb_jane_jealousy`, `gb_jane_neutral`, `gb_jane_sad`, `gb_jane_sarcasm`, `gb_jane_shameful` |
+| `gb_oliver` | `gb_oliver_angry`, `gb_oliver_cheerful`, `gb_oliver_confident`, `gb_oliver_curious`, `gb_oliver_excited`, `gb_oliver_neutral`, `gb_oliver_sad`                                |
+
+Current total from `audio.voices.list(type_="all")`: **30 voices**.
+Use a custom voice UUID as `--audio-voice` if you created one with `audio.voices.create()`.
 
 ### Output paths
 
@@ -119,12 +131,12 @@ override env when both are set.
 
 Each path flag accepts a **directory** (files named from the video slug) or an explicit **file**:
 
-| Flag | Formats | Always / conditional |
-|------|---------|----------------------|
-| `--note-output` | `.md` | Always (synthetic note) |
-| `--raw-output` | `.txt` | Always (raw transcript) |
-| `--narrative-output` | `.md` | With `--narrative` or `--audio` (`.txt` uses `--raw-output`) |
-| `--audio-output` | `.mp3` | Source copy always; generated MP3 with `--audio` |
+| Flag                 | Formats | Always / conditional                                         |
+|----------------------|---------|--------------------------------------------------------------|
+| `--note-output`      | `.md`   | Always (synthetic note)                                      |
+| `--raw-output`       | `.txt`  | Always (raw transcript)                                      |
+| `--narrative-output` | `.md`   | With `--narrative` or `--audio` (`.txt` uses `--raw-output`) |
+| `--audio-output`     | `.mp3`  | Source copy always; generated MP3 with `--audio`             |
 
 Examples:
 
@@ -152,18 +164,18 @@ audio; the source download is saved as `<stem>_source.mp3` in the same directory
 
 ## Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--lang` | `fr` | Source language: `fr`, `en`, or `auto` |
-| `--narrative` | off | Add `*_narrative.txt` and `*_narrative.md` (synthetic note still always written) |
-| `--audio` | off | Generate MP3 from narrative; also generates and saves narrative text |
-| `--translate-summary` | off | Append English translation of the technical docs block |
-| `--audio-voice` | by `--lang` | Mistral voice slug (`fr_marie_neutral`, `en_paul_neutral`, …) or custom UUID; env: `YT_TRANSCRIPT_AUDIO_VOICE` |
-| `--output-dir` | `./output` | Default directory (`YT_TRANSCRIPT_OUTPUT_DIR`) |
-| `--note-output` | (dir) | Synthetic note (`YT_TRANSCRIPT_NOTE_OUTPUT`) |
-| `--raw-output` | (dir) | Raw transcript (`YT_TRANSCRIPT_RAW_OUTPUT`) |
-| `--narrative-output` | (dir) | Narrative Obsidian `.md` (`YT_TRANSCRIPT_NARRATIVE_OUTPUT`) |
-| `--audio-output` | — | Audio files (`YT_TRANSCRIPT_AUDIO_OUTPUT`) |
+| Flag                  | Default     | Description                                                                                                    |
+|-----------------------|-------------|----------------------------------------------------------------------------------------------------------------|
+| `--lang`              | `fr`        | Source language: `fr`, `en`, or `auto`                                                                         |
+| `--narrative`         | off         | Add `*_narrative.txt` and `*_narrative.md` (synthetic note still always written)                               |
+| `--audio`             | off         | Generate MP3 from narrative; also generates and saves narrative text                                           |
+| `--translate-summary` | off         | Append English translation of the technical docs block                                                         |
+| `--audio-voice`       | by `--lang` | Mistral voice slug (`fr_marie_neutral`, `en_paul_neutral`, …) or custom UUID; env: `YT_TRANSCRIPT_AUDIO_VOICE` |
+| `--output-dir`        | `./output`  | Default directory (`YT_TRANSCRIPT_OUTPUT_DIR`)                                                                 |
+| `--note-output`       | (dir)       | Synthetic note (`YT_TRANSCRIPT_NOTE_OUTPUT`)                                                                   |
+| `--raw-output`        | (dir)       | Raw transcript (`YT_TRANSCRIPT_RAW_OUTPUT`)                                                                    |
+| `--narrative-output`  | (dir)       | Narrative Obsidian `.md` (`YT_TRANSCRIPT_NARRATIVE_OUTPUT`)                                                    |
+| `--audio-output`      | —           | Audio files (`YT_TRANSCRIPT_AUDIO_OUTPUT`)                                                                     |
 
 ## Pipeline
 
@@ -200,16 +212,16 @@ Raw transcript ─────────────────────�
 
 ## Modules
 
-| File | Role |
-|------|------|
-| `pipeline/cli.py` | Entry point, orchestration |
+| File                       | Role                                       |
+|----------------------------|--------------------------------------------|
+| `pipeline/cli.py`          | Entry point, orchestration                 |
 | `pipeline/output_paths.py` | Output path resolution (file vs directory) |
-| `pipeline/downloader.py` | yt-dlp wrapper, `VideoMeta` |
-| `pipeline/transcribe.py` | Voxtral STT |
-| `pipeline/postprocess.py` | `clean()`, `narrative()`, translation |
-| `pipeline/tagger.py` | Content tags |
-| `pipeline/presenter.py` | Speaker name |
-| `pipeline/frontmatter.py` | Obsidian YAML frontmatter |
-| `pipeline/tts.py` | Mistral TTS |
-| `pipeline/prompts.py` | LLM system prompts |
-| `pipeline/env_loader.py` | `.env` loader |
+| `pipeline/downloader.py`   | yt-dlp wrapper, `VideoMeta`                |
+| `pipeline/transcribe.py`   | Voxtral STT                                |
+| `pipeline/postprocess.py`  | `clean()`, `narrative()`, translation      |
+| `pipeline/tagger.py`       | Content tags                               |
+| `pipeline/presenter.py`    | Speaker name                               |
+| `pipeline/frontmatter.py`  | Obsidian YAML frontmatter                  |
+| `pipeline/tts.py`          | Mistral TTS                                |
+| `pipeline/prompts.py`      | LLM system prompts                         |
+| `pipeline/env_loader.py`   | `.env` loader                              |
